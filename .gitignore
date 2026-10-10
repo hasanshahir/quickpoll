@@ -1,0 +1,10 @@
+.neon
+.env
+.env.local
+.env.*
+node_modules/
+dist/
+client/dist/
+.DS_Store
+.agents/
+skills-lock.json
