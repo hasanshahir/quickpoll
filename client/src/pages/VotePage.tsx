@@ -10,7 +10,6 @@ import {
   Lock,
   ArrowRight,
   Vote,
-  Sparkles,
 } from 'lucide-react';
 
 export const VotePage = () => {
@@ -135,11 +134,10 @@ export const VotePage = () => {
           {isPollClosed ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <Lock className="w-3.5 h-3.5" />
-              Poll Closed
+              Closed
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               Active
             </span>
           )}
@@ -151,7 +149,7 @@ export const VotePage = () => {
           {poll.expires_at && !isPollClosed && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
               <Clock className="w-3 h-3" />
-              Ends {new Date(poll.expires_at).toLocaleDateString()}
+              Expires {new Date(poll.expires_at).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -161,7 +159,6 @@ export const VotePage = () => {
         </h1>
       </div>
 
-      {/* Already Voted Banner */}
       {alreadyVoted && (
         <div className="mb-6 p-4 rounded-xl bg-teal-500/10 border border-teal-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -175,18 +172,17 @@ export const VotePage = () => {
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 text-xs font-bold hover:bg-teal-400 transition-colors"
           >
             <BarChart2 className="w-3.5 h-3.5" />
-            View Results
+            Results
           </Link>
         </div>
       )}
 
-      {/* Closed Notice */}
       {isPollClosed && !alreadyVoted && (
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Lock className="w-5 h-5 text-amber-400 shrink-0" />
             <p className="text-sm font-medium text-amber-200">
-              Voting has ended for this poll.
+              This poll is closed.
             </p>
           </div>
           <Link
@@ -194,12 +190,11 @@ export const VotePage = () => {
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 transition-colors"
           >
             <BarChart2 className="w-3.5 h-3.5" />
-            View Final Results
+            Results
           </Link>
         </div>
       )}
 
-      {/* Voting Form */}
       <form onSubmit={handleVoteSubmit} className="space-y-3">
         {poll.options.map((option) => {
           const isSelected = selectedOptions.includes(option.id);
@@ -219,7 +214,6 @@ export const VotePage = () => {
                   : 'bg-slate-900 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-800/40'
               }`}
             >
-              {/* Radio or Checkbox icon */}
               <div
                 className={`w-5 h-5 flex items-center justify-center transition-colors shrink-0 ${
                   poll.is_multiple_choice ? 'rounded' : 'rounded-full'
@@ -262,17 +256,17 @@ export const VotePage = () => {
             {submitting ? (
               <>
                 <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                Submitting Ballot...
+                Submitting...
               </>
             ) : alreadyVoted ? (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                Vote Recorded
+                Voted
               </>
             ) : (
               <>
                 <Vote className="w-4 h-4" />
-                Cast Your Vote
+                Vote
               </>
             )}
           </button>
@@ -282,20 +276,11 @@ export const VotePage = () => {
             className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-colors border border-slate-700/60"
           >
             <BarChart2 className="w-4 h-4" />
-            <span>See Live Results</span>
+            <span>Results</span>
             <ArrowRight className="w-3.5 h-3.5 opacity-60" />
           </Link>
         </div>
       </form>
-
-      {/* Footer hint */}
-      <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
-        <span className="flex items-center gap-1">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-          Live ballot verification enabled
-        </span>
-        <span>QuickPoll Anonymous</span>
-      </div>
     </div>
   );
 };

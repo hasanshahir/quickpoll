@@ -12,7 +12,6 @@ import {
   Check,
   BarChart2,
   Settings,
-  Sparkles,
   ExternalLink,
   Vote,
 } from 'lucide-react';
@@ -133,18 +132,16 @@ export const CreatePage = () => {
           </div>
 
           <h2 className="text-2xl font-bold text-slate-100 tracking-tight mb-2">
-            Your Poll is Live!
+            Poll created
           </h2>
           <p className="text-sm text-slate-300 font-medium mb-6">
             "{createdData.question}"
           </p>
 
-          {/* Links Section */}
           <div className="space-y-4 mb-6">
-            {/* Share Voting Link */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                Share Link (For Voters)
+                Voting link
               </label>
               <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-950 border border-slate-800">
                 <input
@@ -163,10 +160,9 @@ export const CreatePage = () => {
               </div>
             </div>
 
-            {/* Results Link */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                Live Results Link
+                Results link
               </label>
               <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-950 border border-slate-800">
                 <input
@@ -185,16 +181,15 @@ export const CreatePage = () => {
               </div>
             </div>
 
-            {/* Admin Link Warning */}
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <div className="flex items-start gap-2.5 mb-2">
                 <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
-                    Save Your Admin Link (Shown Once)
+                    Admin link (shown once)
                   </h4>
                   <p className="text-xs text-amber-200/90 mt-0.5">
-                    Anyone with this link can close or delete your poll. It will not be shown again.
+                    Save this link to close or delete your poll. It is not shown again.
                   </p>
                 </div>
               </div>
@@ -217,20 +212,19 @@ export const CreatePage = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => setShareModalOpen(true)}
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 transition-colors"
             >
-              Show QR Code
+              QR Code
             </button>
             <Link
               to={`/p/${createdData.id}/results`}
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm transition-colors border border-slate-700"
             >
               <BarChart2 className="w-4 h-4" />
-              View Results
+              Results
             </Link>
             <button
               onClick={() => {
@@ -241,7 +235,7 @@ export const CreatePage = () => {
               }}
               className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-slate-400 hover:text-slate-200 text-xs font-medium transition-colors"
             >
-              Create Another
+              New poll
             </button>
           </div>
         </div>
@@ -261,39 +255,36 @@ export const CreatePage = () => {
   return (
     <div className="mx-auto max-w-xl py-6 px-4 sm:px-0">
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight mb-2 flex items-center gap-2">
-          <span>Create an Instant Poll</span>
-          <Sparkles className="w-5 h-5 text-emerald-400" />
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight mb-2">
+          Create a Poll
         </h1>
         <p className="text-sm text-slate-400">
-          Set up a live poll in seconds. Share the link or QR code, no login required.
+          No account required. Add a question and at least two options.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Question field */}
         <div>
           <label className="block text-sm font-semibold text-slate-200 mb-2">
-            Poll Question
+            Question
           </label>
           <input
             type="text"
             required
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g. Which design concept do you prefer?"
+            placeholder="What is your question?"
             className="w-full rounded-xl bg-slate-900 border border-slate-800 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm sm:text-base transition-colors"
           />
         </div>
 
-        {/* Options list */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold text-slate-200">
-              Answer Options
+              Options
             </label>
             <span className="text-xs text-slate-500 font-mono">
-              {options.length} / 10 options
+              {options.length} / 10
             </span>
           </div>
 
@@ -332,21 +323,19 @@ export const CreatePage = () => {
               className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors border border-dashed border-emerald-500/30 w-full justify-center"
             >
               <Plus className="w-4 h-4" />
-              Add Another Option
+              Add option
             </button>
           )}
         </div>
 
-        {/* Settings: Multi-choice & Expiration */}
         <div className="space-y-4 pt-2 border-t border-slate-800/80">
-          {/* Multiple choice toggle */}
           <label className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:border-slate-700 transition-colors">
             <div>
               <p className="text-sm font-semibold text-slate-200">
-                Allow Multiple Choices
+                Allow multiple choices
               </p>
               <p className="text-xs text-slate-400">
-                Voters can select more than one answer option.
+                Voters can select more than one option.
               </p>
             </div>
             <input
@@ -357,14 +346,13 @@ export const CreatePage = () => {
             />
           </label>
 
-          {/* Optional expiration toggle */}
           <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
             <label className="flex items-center justify-between cursor-pointer">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-slate-400" />
                 <div>
                   <p className="text-sm font-semibold text-slate-200">
-                    Set Expiration Time
+                    Set expiration date
                   </p>
                   <p className="text-xs text-slate-400">
                     Automatically close poll after a specified date.
@@ -409,7 +397,7 @@ export const CreatePage = () => {
           {submitting ? (
             <>
               <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-              Publishing Poll...
+              Creating...
             </>
           ) : (
             <>
@@ -420,11 +408,10 @@ export const CreatePage = () => {
         </button>
       </form>
 
-      {/* My Polls list from localStorage */}
       {myPolls.length > 0 && (
         <div className="mt-12 pt-8 border-t border-slate-800">
           <h3 className="text-base font-bold text-slate-200 mb-3 flex items-center gap-2">
-            <span>My Created Polls</span>
+            <span>My polls</span>
             <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
               {myPolls.length}
             </span>

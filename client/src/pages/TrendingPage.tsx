@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import type { TrendingPoll } from '../api';
 import {
-  TrendingUp,
   Users,
   Vote,
   BarChart2,
@@ -11,7 +10,6 @@ import {
   RotateCw,
   PlusCircle,
   AlertCircle,
-  Sparkles,
 } from 'lucide-react';
 
 export const TrendingPage = () => {
@@ -41,11 +39,10 @@ export const TrendingPage = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight flex items-center gap-2">
-            <span>Trending Polls</span>
-            <TrendingUp className="w-6 h-6 text-emerald-400" />
+            Trending Polls
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Discover active polls with the highest community engagement.
+            Polls ranked by total votes.
           </p>
         </div>
 
@@ -68,11 +65,10 @@ export const TrendingPage = () => {
         </div>
       )}
 
-      {/* Error state */}
       {error && !loading && (
         <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center">
           <AlertCircle className="w-8 h-8 text-rose-400 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-rose-200 mb-1">Failed to Load Trending Feed</h3>
+          <h3 className="text-sm font-bold text-rose-200 mb-1">Failed to load trending polls</h3>
           <p className="text-xs text-rose-300 mb-4">{error}</p>
           <button
             onClick={fetchTrending}
@@ -83,27 +79,25 @@ export const TrendingPage = () => {
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && !error && trending.length === 0 && (
         <div className="text-center py-16 px-4 rounded-2xl bg-slate-900/50 border border-slate-800/80">
           <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mx-auto mb-3">
-            <Sparkles className="w-6 h-6 text-emerald-400" />
+            <Users className="w-6 h-6 text-emerald-400" />
           </div>
-          <h3 className="text-base font-bold text-slate-100 mb-1">No Active Polls Yet</h3>
+          <h3 className="text-base font-bold text-slate-100 mb-1">No polls yet</h3>
           <p className="text-xs text-slate-400 mb-6 max-w-sm mx-auto">
-            Be the first person to publish a poll and see live votes accumulate!
+            No polls have been created yet.
           </p>
           <Link
             to="/"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 transition-colors shadow-md shadow-emerald-500/20"
           >
             <PlusCircle className="w-4 h-4" />
-            Create First Poll
+            Create a Poll
           </Link>
         </div>
       )}
 
-      {/* Trending Polls List */}
       {!loading && !error && trending.length > 0 && (
         <div className="space-y-3">
           {trending.map((p, idx) => (
@@ -130,8 +124,7 @@ export const TrendingPage = () => {
                     Closed
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                     Active
                   </span>
                 )}

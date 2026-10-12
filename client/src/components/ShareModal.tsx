@@ -73,7 +73,7 @@ export const ShareModal = ({ isOpen, onClose, pollId, question }: ShareModalProp
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Live Results Link
+            Results Link
           </button>
         </div>
 

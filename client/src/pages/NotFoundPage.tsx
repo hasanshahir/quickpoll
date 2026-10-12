@@ -27,7 +27,7 @@ export const NotFoundPage = () => {
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
         >
           <TrendingUp className="h-4 w-4" />
-          Explore Trending
+          Trending
         </Link>
       </div>
     </div>

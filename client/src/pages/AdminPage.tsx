@@ -75,11 +75,11 @@ export const AdminPage = () => {
 
     try {
       const res = await api.closePoll(id, adminToken);
-      setActionMessage(res.message || 'Poll has been closed successfully.');
+      setActionMessage(res.message || 'Poll closed.');
       setPoll((prev) => (prev ? { ...prev, is_closed: true } : null));
       setConfirmCloseOpen(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to close poll. Verify your admin token.');
+      setError(err.message || 'Failed to close poll.');
     } finally {
       setProcessing(false);
     }
@@ -93,14 +93,13 @@ export const AdminPage = () => {
     try {
       await api.deletePoll(id, adminToken);
 
-      // Clean up localStorage
       const polls = getMyPolls().filter((p) => p.id !== id);
       localStorage.setItem('quickpoll_my_polls', JSON.stringify(polls));
 
       setConfirmDeleteOpen(false);
       navigate('/', { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Failed to delete poll. Verify your admin token.');
+      setError(err.message || 'Failed to delete poll.');
       setProcessing(false);
     }
   };
@@ -128,7 +127,7 @@ export const AdminPage = () => {
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Home
         </Link>
       </div>
     );
@@ -136,14 +135,13 @@ export const AdminPage = () => {
 
   return (
     <div className="mx-auto max-w-xl py-6 px-4 sm:px-0">
-      {/* Navigation */}
       <div className="flex items-center justify-between mb-6">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Home
         </Link>
 
         {poll && (
@@ -153,31 +151,29 @@ export const AdminPage = () => {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700"
             >
               <BarChart2 className="w-3.5 h-3.5" />
-              Live Results
+              Results
             </Link>
             <Link
               to={`/p/${poll.id}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-medium transition-colors border border-emerald-500/30"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Vote Page
+              Vote
             </Link>
           </div>
         )}
       </div>
 
-      {/* Header */}
       <div className="mb-6">
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3">
           <Settings className="w-3.5 h-3.5" />
-          Creator Administration
+          Poll Admin
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight leading-snug">
           {poll?.question}
         </h1>
       </div>
 
-      {/* Messages */}
       {actionMessage && (
         <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 text-emerald-300 text-sm">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
@@ -192,15 +188,14 @@ export const AdminPage = () => {
         </div>
       )}
 
-      {/* Admin Token Input if not provided or recognized */}
       {!adminToken && (
         <div className="mb-6 p-5 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="flex items-center gap-2 mb-2 text-amber-400 font-semibold text-sm">
             <Key className="w-4 h-4" />
-            Admin Token Required
+            Admin Token
           </div>
           <p className="text-xs text-slate-400 mb-4">
-            Enter the secret admin token provided when this poll was created to manage it.
+            Enter the admin token for this poll.
           </p>
 
           <form onSubmit={handleApplyToken} className="flex gap-2">
@@ -209,30 +204,28 @@ export const AdminPage = () => {
               required
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="Paste UUID admin token"
+              placeholder="Paste admin token"
               className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs font-mono text-slate-200 focus:border-indigo-500 focus:outline-none"
             />
             <button
               type="submit"
               className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold text-xs transition-colors shrink-0"
             >
-              Authenticate
+              Submit
             </button>
           </form>
         </div>
       )}
 
-      {/* Management Actions */}
       {adminToken && poll && (
         <div className="space-y-4">
-          {/* Status Card */}
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Current Status
+                Status
               </p>
               <p className="text-sm font-bold text-slate-200 mt-0.5">
-                {poll.is_closed ? 'Closed (Voting Disabled)' : 'Active (Accepting Votes)'}
+                {poll.is_closed ? 'Closed' : 'Active'}
               </p>
             </div>
             <span
@@ -246,7 +239,6 @@ export const AdminPage = () => {
             </span>
           </div>
 
-          {/* Action 1: Close Poll */}
           <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
@@ -254,7 +246,7 @@ export const AdminPage = () => {
                 Close Poll
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Stop accepting new votes while preserving existing results.
+                Stop accepting votes.
               </p>
             </div>
 
@@ -264,11 +256,10 @@ export const AdminPage = () => {
               className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
               <Lock className="w-3.5 h-3.5" />
-              {poll.is_closed ? 'Already Closed' : 'Close Poll Early'}
+              {poll.is_closed ? 'Already Closed' : 'Close Poll'}
             </button>
           </div>
 
-          {/* Action 2: Delete Poll */}
           <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-bold text-rose-300 flex items-center gap-2">
@@ -276,7 +267,7 @@ export const AdminPage = () => {
                 Delete Poll
               </h3>
               <p className="text-xs text-rose-200/70 mt-1">
-                Permanently delete this poll, all options, and all cast votes.
+                Permanently delete this poll and all votes.
               </p>
             </div>
 
@@ -291,16 +282,15 @@ export const AdminPage = () => {
         </div>
       )}
 
-      {/* Confirmation Dialog: Close Poll */}
       {confirmCloseOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-2xl">
             <h3 className="text-base font-bold text-slate-100 mb-2 flex items-center gap-2">
               <Lock className="w-4 h-4 text-amber-400" />
-              Close This Poll?
+              Close Poll?
             </h3>
             <p className="text-xs text-slate-400 mb-6">
-              Voters will immediately be prevented from casting further ballots. This action cannot be reversed.
+              Voting will end immediately. This cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -315,23 +305,22 @@ export const AdminPage = () => {
                 disabled={processing}
                 className="px-4 py-2 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 transition-colors"
               >
-                {processing ? 'Closing...' : 'Yes, Close Poll'}
+                {processing ? 'Closing...' : 'Close Poll'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirmation Dialog: Delete Poll */}
       {confirmDeleteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-rose-500/30 p-6 shadow-2xl">
             <h3 className="text-base font-bold text-rose-300 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
-              Permanently Delete Poll?
+              Delete Poll?
             </h3>
             <p className="text-xs text-slate-400 mb-6">
-              This will erase all questions, options, and vote records from the database. This action cannot be undone.
+              This will permanently remove the poll and all votes. This cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -346,7 +335,7 @@ export const AdminPage = () => {
                 disabled={processing}
                 className="px-4 py-2 rounded-lg bg-rose-500 text-slate-950 text-xs font-bold hover:bg-rose-600 transition-colors"
               >
-                {processing ? 'Deleting...' : 'Yes, Permanently Delete'}
+                {processing ? 'Deleting...' : 'Delete Poll'}
               </button>
             </div>
           </div>
