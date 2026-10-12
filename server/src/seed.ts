@@ -1,18 +1,47 @@
 import { pool } from './db.js';
 
+const DEMO_QUESTION = 'What is your top priority for modern web applications?';
+
 async function seed() {
-  console.log('Seeding QuickPoll database with demo poll and baseline votes...');
+  console.log('Checking QuickPoll database for existing demo poll...');
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    // Idempotent check: Parameterized query to check if demo poll already exists
+    const existingResult = await client.query(
+      `SELECT id, question, admin_token 
+       FROM polls 
+       WHERE question = $1 
+       LIMIT 1`,
+      [DEMO_QUESTION]
+    );
+
+    if (existingResult.rows.length > 0) {
+      const poll = existingResult.rows[0];
+      await client.query('COMMIT');
+
+      console.log('\n======================================================');
+      console.log(' DEMO POLL ALREADY EXISTS (Idempotent: Re-using existing)');
+      console.log('======================================================');
+      console.log(`Poll ID:        ${poll.id}`);
+      console.log(`Question:       "${poll.question}"`);
+      console.log(`Admin Token:    ${poll.admin_token}`);
+      console.log('------------------------------------------------------');
+      console.log(`Voting URL:     /p/${poll.id}`);
+      console.log(`Results URL:    /p/${poll.id}/results`);
+      console.log(`Admin Manage:   /manage/${poll.id}?token=${poll.admin_token}`);
+      console.log('======================================================\n');
+      return;
+    }
 
     // 1. Parameterized insert for demonstration poll
     const pollResult = await client.query(
       `INSERT INTO polls (question, is_multiple_choice, is_closed)
        VALUES ($1, $2, $3)
        RETURNING id, question, admin_token`,
-      ['What is your top priority for modern web applications?', false, false]
+      [DEMO_QUESTION, false, false]
     );
 
     const poll = pollResult.rows[0];
