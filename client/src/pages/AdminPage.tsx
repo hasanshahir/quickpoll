@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { api, getStoredAdminToken, getMyPolls } from '../api';
+import { api, getStoredAdminToken, getMyPolls, saveStoredAdminToken } from '../api';
 import type { Poll } from '../api';
 import {
   Settings,
@@ -34,6 +34,15 @@ export const AdminPage = () => {
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
+
+  // Store token from URL in localStorage and sanitize address bar
+  useEffect(() => {
+    if (tokenFromUrl && id) {
+      saveStoredAdminToken(id, tokenFromUrl);
+      setAdminToken(tokenFromUrl);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [tokenFromUrl, id]);
 
   useEffect(() => {
     if (!id) return;

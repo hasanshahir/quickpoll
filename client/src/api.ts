@@ -94,6 +94,26 @@ export function getStoredAdminToken(pollId: string): string | null {
   return match ? match.admin_token : null;
 }
 
+export function saveStoredAdminToken(pollId: string, token: string): void {
+  try {
+    const polls = getMyPolls();
+    const existing = polls.find((p) => p.id === pollId);
+    if (existing) {
+      existing.admin_token = token;
+    } else {
+      polls.unshift({
+        id: pollId,
+        question: 'Poll ' + pollId.slice(0, 8),
+        admin_token: token,
+        created_at: new Date().toISOString(),
+      });
+    }
+    localStorage.setItem(MY_POLLS_KEY, JSON.stringify(polls));
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     credentials: 'same-origin',
