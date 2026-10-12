@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: QuickPoll API
+  description: >
+    Production REST & Server-Sent Events (SSE) API for QuickPoll, an instant real-time
+    polling platform with atomic ballot submission, anti-duplicate voting constraints,
+    and live result broadcasts.
+  version: 1.0.0
+servers:
+  - url: /
+    description: Current QuickPoll Host
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      description: Returns database connection status and server timestamp.
+      responses:
+        '200':
+          description: Server and database healthy.
+
+  /api/polls:
+    post:
+      summary: Create a new poll
+      description: Atomically inserts a poll and 2-10 options within a SQL transaction, generating a secret admin_token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - question
+                - options
+              properties:
+                question:
+                  type: string
+                  example: What is your primary frontend framework?
+                options:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 2
+                  maxItems: 10
+                  example: ["React", "Vue", "Svelte", "Angular"]
+                is_multiple_choice:
+                  type: boolean
+                  default: false
+                expires_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '201':
+          description: Poll successfully created.
+        '400':
+          description: Invalid input or option count out of bounds.
+
+  /api/polls/{id}:
+    get:
+      summary: Fetch poll details for voting
+      description: Returns poll metadata and options while sanitizing the secret admin token.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Poll details retrieved.
+        '404':
+          description: Poll not found.
+
+  /api/polls/{id}/vote:
+    post:
+      summary: Submit ballot vote
+      description: Atomically inserts voter record and ballot options. Enforces duplicate vote prevention via PostgreSQL unique constraint code 23505.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - option_ids
+                - voter_token
+              properties:
+                option_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                voter_token:
+                  type: string
+                  example: voter_4b1a4097-f584-482f-8703-a2b1cd5b0649
+      responses:
+        '201':
+          description: Vote registered successfully.
+        '400':
+          description: Invalid options or single-choice violation.
+        '403':
+          description: Poll is closed or expired.
+        '404':
+          description: Poll not found.
+        '409':
+          description: You have already voted on this poll (unique constraint violation).
+
+  /api/polls/{id}/results:
+    get:
+      summary: Get aggregated poll results
+      description: Aggregates option vote counts and computes percentage distribution.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Aggregated poll results.
+        '404':
+          description: Poll not found.
+
+  /api/polls/{id}/stream:
+    get:
+      summary: Live SSE poll results stream
+      description: Real-time text/event-stream pushing updated results after every committed ballot vote, poll closure, or deletion.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Live Server-Sent Events stream established.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/polls/feed/trending:
+    get:
+      summary: Get trending polls feed
+      description: Returns top active community polls ranked by total votes and engagement.
+      responses:
+        '200':
+          description: Trending feed list.
+
+  /api/polls/{id}/close:
+    patch:
+      summary: Close poll early (Admin)
+      description: Requires creator admin token. Sets poll to closed and broadcasts event to live SSE subscribers.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: x-admin-token
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                admin_token:
+                  type: string
+      responses:
+        '200':
+          description: Poll closed successfully.
+        '403':
+          description: Invalid admin token.
+
+  /api/polls/{id}:
+    delete:
+      summary: Permanently delete poll (Admin)
+      description: Requires creator admin token. Cascades deletion of all options, votes, and voter records.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: x-admin-token
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Poll deleted successfully.
+        '403':
+          description: Invalid admin token.

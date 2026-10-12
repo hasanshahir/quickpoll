@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import swaggerUi from 'swagger-ui-express';
+import yaml from 'yaml';
 import { pool } from './db.js';
 import { pollsRouter } from './routes/polls.js';
 
@@ -16,6 +18,24 @@ export const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// API Documentation via Swagger UI at /api/docs
+const openApiCandidates = [
+  path.resolve(__dirname, '../../docs/openapi.yaml'),
+  path.resolve(__dirname, '../docs/openapi.yaml'),
+  path.resolve(process.cwd(), 'docs/openapi.yaml'),
+];
+const resolvedOpenApi = openApiCandidates.find((c) => fs.existsSync(c));
+
+if (resolvedOpenApi) {
+  try {
+    const yamlContent = fs.readFileSync(resolvedOpenApi, 'utf8');
+    const swaggerDoc = yaml.parse(yamlContent);
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+  } catch (err) {
+    console.error('Failed to initialize Swagger UI documentation:', err);
+  }
+}
 
 // API Routes
 app.use('/api/polls', pollsRouter);
