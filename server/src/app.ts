@@ -1,5 +1,6 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
@@ -20,15 +21,28 @@ export const app = express();
 
 app.set('trust proxy', 1);
 
-app.use(cors({
-  credentials: true,
-  origin: true,
-}));
+// Security Headers via Helmet (with relaxed CSP on /api/docs so Swagger UI works flawlessly)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+app.use(
+  cors({
+    credentials: true,
+    origin: true,
+  })
+);
+
 app.use(cookieParser());
-app.use(express.json());
+
+// Enforce 10kb JSON request payload limit
+app.use(express.json({ limit: '10kb' }));
 
 // Set UUID httpOnly cookie "qp_voter" for privacy-preserving voter deduplication
-app.use((req: Request, res: Response, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   let voterToken = req.cookies?.qp_voter;
   if (!voterToken || typeof voterToken !== 'string') {
     voterToken = crypto.randomUUID();
@@ -90,10 +104,19 @@ if (clientDistPath) {
   app.use(express.static(clientDistPath));
 
   // SPA fallback for all non-/api routes
-  app.get('*', (req: Request, res: Response, next) => {
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 }
+
+// Production-ready global error handler: generic error messages, no stack traces leaked
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || 500;
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(status).json({
+    error: isProd ? 'Internal Server Error' : err.message || 'Internal Server Error',
+  });
+});

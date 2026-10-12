@@ -1,8 +1,27 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { pool } from '../db.js';
 import { sseHub } from '../sse/hub.js';
 
 export const pollsRouter = Router();
+
+// Rate limiter for poll creation (20 polls/hour/IP)
+const createPollLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many polls created from this IP, please try again later.' },
+});
+
+// Rate limiter for voting (30 votes/minute/IP)
+const voteLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many votes cast from this IP, please slow down.' },
+});
 
 /**
  * Parameterized helper to fetch and aggregate current poll results.
@@ -55,7 +74,7 @@ export async function fetchPollResultsData(pollId: string) {
 }
 
 // 1. Create a Poll (Transaction: insert poll + insert options)
-pollsRouter.post('/', async (req: Request, res: Response): Promise<void> => {
+pollsRouter.post('/', createPollLimiter, async (req: Request, res: Response): Promise<void> => {
   const { question, options, is_multiple_choice, expires_at } = req.body;
 
   if (!question || typeof question !== 'string' || question.trim().length === 0) {
@@ -168,7 +187,7 @@ pollsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // 3. Submit Vote (Atomic transaction enforcing duplicate prevention via 23505)
-pollsRouter.post('/:id/vote', async (req: Request, res: Response): Promise<void> => {
+pollsRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const { option_ids } = req.body;
   const voter_token = (req as any).voterToken || req.cookies?.qp_voter || req.body?.voter_token;

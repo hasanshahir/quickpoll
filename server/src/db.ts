@@ -13,10 +13,13 @@ dotenv.config();
 
 const { Pool } = pg;
 
+// Configurable connection pool size via PG_POOL_MAX env var (default 10)
+const poolMax = parseInt(process.env.PG_POOL_MAX || '10', 10);
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 25,
+  max: poolMax,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
