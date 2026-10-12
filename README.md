@@ -1,60 +1,72 @@
 # QuickPoll — Instant Real-Time Polling Platform
 
-> Live Production URL: `[REPLACE_WITH_RENDER_LIVE_URL]`
+> **Live Deployment**: `[REPLACE_WITH_RENDER_LIVE_URL]`
 > 
-> Swagger API Documentation: `[REPLACE_WITH_RENDER_LIVE_URL]/api/docs` (or `http://localhost:5000/api/docs` locally)
+> **Interactive API Docs**: `[REPLACE_WITH_RENDER_LIVE_URL]/api/docs` (or `http://localhost:5000/api/docs` locally)
+> 
+> **Demo Video Walkthrough**: `[REPLACE_WITH_DEMO_VIDEO_LINK]`
 
 ---
 
 ## ⚡ Overview
-**QuickPoll** is a high-performance, real-time polling application designed for speed, simplicity, and transactional integrity. Anyone can create a poll in seconds, share it via URL or mobile QR code, and watch results update live without refreshing. 
+**QuickPoll** is a lightweight, zero-login, real-time polling platform built for high-throughput ballot collection and instant result synchronization. Anyone can formulate a question with 2 to 10 options, share it via URL or vector QR code, and watch the results broadcast in real time across all connected browsers using Server-Sent Events (SSE).
 
-**QuickPoll requires no account or login.** Creators receive a unique, secret administrative token that grants permissions to close or delete their polls.
+**There is no user registration or login.** Creators receive a unique, secret administrative token that grants permissions to close or permanently delete their polls.
 
 ---
 
 ## ✨ Key Features
-- **Instant Poll Creation**: Question and 2–10 options, single or multiple-choice, optional expiration time.
-- **Server-Sent Events (SSE) Live Results**: `GET /api/polls/:id/stream` broadcasts instant updates across all connected browsers whenever a ballot is committed. Automatic 5-second polling fallback if EventSource encounters network interruption.
-- **Strict Double-Vote Prevention**: Enforces one ballot per voter per poll at the PostgreSQL database level using a compound unique primary key `(poll_id, voter_token)`. Concurrency-safe against race conditions.
-- **QR Code & Link Sharing**: Instant 1-click clipboard copy and rendered vector QR codes (`qrcode.react`) for both voting ballots and live results.
-- **Creator Moderation**: Creators can close polls early or permanently delete polls using their private `x-admin-token`.
-- **Engagement Feed**: Trending feed dynamically calculates and displays community polls ordered by activity.
-- **Mobile-First Experience**: Fully responsive interface tested down to 360px viewport width with dark theme aesthetics.
+- **Zero-Friction Poll Creation**: Create dynamic single or multiple-choice polls in seconds with optional expiration time.
+- **Real-Time Live Results (SSE)**: `GET /api/polls/:id/stream` provides immediate updates after every ballot submission, poll closure, or deletion with an automated 25-second heartbeat.
+- **Resilient Connection Fallback**: The client automatically reconnects to SSE and gracefully falls back to **5-second polling** if the stream experiences repeated network failures.
+- **Double-Vote Interception**: Deduplication enforced at the PostgreSQL database level using a compound primary key `(poll_id, voter_token)`.
+- **Integrated QR Code & Link Sharing**: Mobile-friendly vector QR codes (`qrcode.react`) and 1-click clipboard copy for both ballot and result URLs.
+- **Creator Moderation Tools**: Close polls early or delete them completely using a secret `x-admin-token`.
+- **Trending Polls Feed**: Live community discovery feed ranking active polls by total vote engagement.
+- **Mobile-First Responsive Design**: Optimized down to 360px viewport widths with tailored dark mode styling.
 
 ---
 
 ## 🛠️ Technology Stack
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide React, QRCode React, React Router 7.
-- **Backend**: Node.js, Express, TypeScript, Server-Sent Events (SSE), connection pooling (`pg`).
+- **Backend**: Node.js, Express, TypeScript, Server-Sent Events (SSE), Helmet, Cookie Parser, Express Rate Limit, `pg` connection pool.
 - **Database**: PostgreSQL on Neon (Serverless Postgres with pooled connections & SSL).
 - **API Documentation**: OpenAPI 3.0.3 with Swagger UI at `/api/docs`.
-- **Testing**: Vitest & Supertest (covering creation, double voting, 20-parallel race conditions, closure).
+- **Testing**: Vitest & Supertest (covering creation, duplicate rejection, 20-parallel race conditions, closure, distinct cookies).
 
 ---
 
 ## 📸 Screenshots
 
-### Desktop View
-```
-+--------------------------------------------------------------------------+
-|  [SCREENSHOT_PLACEHOLDER: Desktop Live Results with Animated Bar Charts]  |
-+--------------------------------------------------------------------------+
-```
+### Desktop Views (1280px)
+| Create Poll Page | Live Results & Chart |
+| :---: | :---: |
+| ![Desktop Create Poll](docs/screenshots/desktop_create.png) | ![Desktop Results](docs/screenshots/desktop_results.png) |
 
-### Mobile View (360px)
-```
-+---------------------------------------+
-|  [SCREENSHOT_PLACEHOLDER: Mobile]     |
-|  [Ballot Form & QR Code Modal]        |
-+---------------------------------------+
-```
+| Voting Ballot | Trending Community Feed |
+| :---: | :---: |
+| ![Desktop Vote](docs/screenshots/desktop_vote.png) | ![Desktop Trending](docs/screenshots/desktop_trending.png) |
+
+| Creator Admin Moderation |
+| :---: |
+| ![Desktop Admin](docs/screenshots/desktop_admin.png) |
 
 ---
 
-## 🔗 Seeded Demo Poll Links
-A verified live demo poll is seeded in the database:
-- **Vote Page**: `/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8`
+### Mobile Views (360px)
+| Mobile Create | Mobile Ballot | Mobile Results |
+| :---: | :---: | :---: |
+| ![Mobile Create](docs/screenshots/mobile_create.png) | ![Mobile Vote](docs/screenshots/mobile_vote.png) | ![Mobile Results](docs/screenshots/mobile_results.png) |
+
+| Mobile Trending | Mobile Admin |
+| :---: | :---: |
+| ![Mobile Trending](docs/screenshots/mobile_trending.png) | ![Mobile Admin](docs/screenshots/mobile_admin.png) |
+
+---
+
+## 🔗 Verified Demo Poll
+A pre-seeded demonstration poll is available in the database:
+- **Ballot Vote Page**: `/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8`
 - **Live Results Page**: `/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results`
 - **Creator Admin Page**: `/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d`
 
@@ -62,15 +74,26 @@ A verified live demo poll is seeded in the database:
 
 ## 🔒 Security & Voter Identity Architecture
 
-### No Authentication / Zero Login
-QuickPoll is intentionally frictionless — users do not need an account or login to vote or create polls.
-- **Creator Admin Security**: When a poll is created, the server generates a cryptographically random UUID `admin_token`. This token is returned once in the creation response and never exposed in public poll endpoints. All privileged actions (`PATCH /api/polls/:id/close` and `DELETE /api/polls/:id`) strictly require `x-admin-token`.
-- **Ballot Deduplication**:
-  - The client generates and persists a unique `voter_token` identifier.
-  - The PostgreSQL database enforces a compound primary key `(poll_id, voter_token)` on the `poll_voters` table.
-  - Simultaneous or duplicate ballot submissions trigger PostgreSQL error code `23505` (`unique_violation`), which the server intercepts and translates to HTTP `409 Conflict`.
-- **Voter Identity Limitations**:
-  - Because QuickPoll does not require user accounts, voter tokens stored in `localStorage` or device cookies can be cleared by end users or bypassed in incognito windows. For higher assurance against fraud without requiring user login, device fingerprinting or server-managed secure cookies can be used, but the primary ballot integrity guarantee rests on the atomic database unique constraint.
+### 1. Zero Login / Frictionless Creator Administration
+To maintain maximum accessibility, QuickPoll does not require users to create accounts.
+- When a poll is created, the server generates a cryptographically random UUID `admin_token`.
+- This token is returned once in the creation response and is **never** exposed in public poll endpoints.
+- Privileged operations (`PATCH /api/polls/:id/close` and `DELETE /api/polls/:id`) require authentication via the `x-admin-token` header or request body.
+- When opened via an administrative link (`?token=...`), the client stores the token in `localStorage` and scrubs the query parameter from the address bar using `history.replaceState` to prevent token leakage via copy-pasting or shoulder surfing.
+
+### 2. Cookie-Based Voter Identity
+- Each voter is identified by a server-set `httpOnly` cookie (`qp_voter`) with `SameSite=Lax`, `Secure` (in production), and a 1-year lifespan.
+- When a voter views a poll, `GET /api/polls/:id` checks the voter's cookie against the database and returns `hasVoted: true`, allowing the client to present their recorded ballot status and navigate directly to live results.
+- **Honest Security Limitations**:
+  - Because identity is cookie-based, clearing browser cookies, using private/incognito browsing windows, or opening the poll in a different browser allows a user to vote again.
+  - IP addresses are **not** used to restrict ballots to a single vote because shared networks (university campuses, corporate offices, coffee shops) share a single public IP, which would unfairly block legitimate co-located voters.
+  - Instead, IP addresses are safeguarded via **sliding-window rate limiting** (20 poll creations/hour/IP and 30 votes/minute/IP) to defend against automated ballot stuffing scripts and DoS attacks.
+  - The core guarantee against race conditions remains the atomic PostgreSQL primary key constraint `PRIMARY KEY (poll_id, voter_token)`.
+
+### 3. Application Hardening
+- **Helmet**: Secures HTTP headers while maintaining unbuffered SSE streaming and Swagger UI availability.
+- **Payload Limits**: Strict 10kb JSON body limits on incoming requests.
+- **Production Information Masking**: Generic error responses in production environments (`NODE_ENV=production`) ensuring internal stack traces and server internals are never exposed.
 
 ---
 
@@ -81,55 +104,47 @@ QuickPoll is intentionally frictionless — users do not need an account or logi
 - PostgreSQL database (or free [Neon](https://neon.tech) account)
 
 ### 2. Environment Variables
-Create a `.env` file in `server/` (or `.env.local` in project root):
+Create `.env` in `server/` (or `.env.local` in project root):
 ```env
 DATABASE_URL=postgres://user:password@ep-example.pooler.region.neon.tech/neondb?sslmode=require
+PG_POOL_MAX=25
 PORT=5000
 NODE_ENV=development
 ```
 
 ### 3. Installation & Run
 ```bash
-# Install root, client, and server dependencies
+# Build both client and server bundles
 npm run build
 
-# Run database schema migration
+# Run database schema migrations
 npm --prefix server run migrate
 
-# Optional: Seed demo poll
+# Run idempotent seed script (prints demo links)
 npm --prefix server run seed
 
-# Run tests
+# Run automated Vitest + Supertest suite
 npm --prefix server test
 
-# Start local server (serves API on :5000 and client build)
+# Start unified production server
 npm start
-```
-
-For frontend HMR development:
-```bash
-# Run backend dev watcher
-cd server && npm run dev
-
-# In another terminal, run frontend Vite dev server
-cd client && npm run dev
 ```
 
 ---
 
 ## ☁️ Deployment Guide (Render Single Web Service)
 
-QuickPoll is configured to deploy as a unified single Render Web Service where Express serves both the REST/SSE APIs and the compiled Vite React frontend (`client/dist`).
+QuickPoll is designed to run as a single unified web service where Express delivers both the API endpoints and the compiled React frontend.
 
 1. **Create Web Service on Render**:
-   - Connect your GitHub repository.
+   - Connect repository `hasanshahir/quickpoll`.
    - **Environment**: Node
    - **Build Command**: `npm run build`
-   - **Start Command**: `npm run start` (automatically executes migration then launches Express server)
+   - **Start Command**: `npm run start` (runs migration then boots the server)
 2. **Environment Variables on Render**:
-   - `DATABASE_URL`: `postgres://[user]:[password]@[neon-host]/neondb?sslmode=require`
+   - `DATABASE_URL`: `postgres://[user]:[password]@[neon-host]/neondb?sslmode=require` (Pooled connection string)
    - `NODE_ENV`: `production`
+   - `PG_POOL_MAX`: `25`
 3. **Verify Deployment**:
-   - Access `https://your-service.onrender.com`
-   - Access `https://your-service.onrender.com/api/docs` for Swagger UI
-   - Access `https://your-service.onrender.com/api/health` for database health status
+   - Navigate to `https://your-service.onrender.com`
+   - Test `/api/health` and `/api/docs`
