@@ -11,6 +11,8 @@ export interface Poll {
   expires_at: string | null;
   created_at: string;
   options: PollOption[];
+  has_voted?: boolean;
+  hasVoted?: boolean;
 }
 
 export interface PollResultOption {
@@ -60,19 +62,7 @@ export interface StoredPoll {
   created_at: string;
 }
 
-const VOTER_TOKEN_KEY = 'quickpoll_voter_token';
 const MY_POLLS_KEY = 'quickpoll_my_polls';
-
-export function getOrCreateVoterToken(): string {
-  let token = localStorage.getItem(VOTER_TOKEN_KEY);
-  if (!token) {
-    token = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : 'voter_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    localStorage.setItem(VOTER_TOKEN_KEY, token);
-  }
-  return token;
-}
 
 export function getMyPolls(): StoredPoll[] {
   try {
@@ -106,6 +96,7 @@ export function getStoredAdminToken(pollId: string): string | null {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, {
+    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -137,10 +128,10 @@ export const api = {
 
   getPoll: (id: string) => request<Poll>(`/api/polls/${id}`),
 
-  submitVote: (id: string, option_ids: string[], voter_token: string) =>
+  submitVote: (id: string, option_ids: string[]) =>
     request<{ success: boolean; message: string }>(`/api/polls/${id}/vote`, {
       method: 'POST',
-      body: JSON.stringify({ option_ids, voter_token }),
+      body: JSON.stringify({ option_ids }),
     }),
 
   getPollResults: (id: string) => request<PollResultsResponse>(`/api/polls/${id}/results`),

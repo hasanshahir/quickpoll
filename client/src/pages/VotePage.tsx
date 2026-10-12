@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { api, getOrCreateVoterToken } from '../api';
+import { api } from '../api';
 import type { Poll } from '../api';
 import {
   CheckCircle2,
@@ -29,12 +29,6 @@ export const VotePage = () => {
   useEffect(() => {
     if (!id) return;
 
-    // Check if previously recorded as voted on this device
-    const hasVotedLocal = localStorage.getItem(`quickpoll_voted_${id}`);
-    if (hasVotedLocal) {
-      setAlreadyVoted(true);
-    }
-
     setLoading(true);
     setError(null);
 
@@ -42,6 +36,9 @@ export const VotePage = () => {
       .getPoll(id)
       .then((data) => {
         setPoll(data);
+        if (data.has_voted || data.hasVoted) {
+          setAlreadyVoted(true);
+        }
       })
       .catch((err) => {
         setError(err.message || 'Poll could not be found.');
@@ -78,11 +75,8 @@ export const VotePage = () => {
     setSubmitting(true);
     setVoteError(null);
 
-    const voterToken = getOrCreateVoterToken();
-
     try {
-      await api.submitVote(id, selectedOptions, voterToken);
-      localStorage.setItem(`quickpoll_voted_${id}`, 'true');
+      await api.submitVote(id, selectedOptions);
       setAlreadyVoted(true);
       navigate(`/p/${id}/results`);
     } catch (err: any) {

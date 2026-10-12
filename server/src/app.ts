@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -16,8 +18,30 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 
-app.use(cors());
+app.set('trust proxy', 1);
+
+app.use(cors({
+  credentials: true,
+  origin: true,
+}));
+app.use(cookieParser());
 app.use(express.json());
+
+// Set UUID httpOnly cookie "qp_voter" for privacy-preserving voter deduplication
+app.use((req: Request, res: Response, next) => {
+  let voterToken = req.cookies?.qp_voter;
+  if (!voterToken || typeof voterToken !== 'string') {
+    voterToken = crypto.randomUUID();
+    res.cookie('qp_voter', voterToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+    });
+  }
+  (req as any).voterToken = voterToken;
+  next();
+});
 
 // API Documentation via Swagger UI at /api/docs
 const openApiCandidates = [

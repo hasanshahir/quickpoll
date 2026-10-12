@@ -144,10 +144,23 @@ pollsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
       [id]
     );
 
+    // Parameterized query checking if current voter has already cast a ballot
+    const voterToken = (req as any).voterToken || req.cookies?.qp_voter;
+    let hasVoted = false;
+    if (voterToken) {
+      const voterCheck = await pool.query(
+        `SELECT 1 FROM poll_voters WHERE poll_id = $1 AND voter_token = $2 LIMIT 1`,
+        [id, voterToken]
+      );
+      hasVoted = voterCheck.rows.length > 0;
+    }
+
     res.json({
       ...poll,
       is_closed: poll.is_closed || Boolean(isExpired),
-      options: optionsResult.rows
+      options: optionsResult.rows,
+      has_voted: hasVoted,
+      hasVoted: hasVoted,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch poll.' });
@@ -157,7 +170,8 @@ pollsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
 // 3. Submit Vote (Atomic transaction enforcing duplicate prevention via 23505)
 pollsRouter.post('/:id/vote', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { option_ids, voter_token } = req.body;
+  const { option_ids } = req.body;
+  const voter_token = (req as any).voterToken || req.cookies?.qp_voter || req.body?.voter_token;
 
   if (!voter_token || typeof voter_token !== 'string') {
     res.status(400).json({ error: 'Voter token identifier is required.' });
