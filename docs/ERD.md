@@ -1,6 +1,6 @@
-# QuickPoll — Entity Relationship Diagram (ERD)
+# QuickPoll Entity Relationship Diagram
 
-This document specifies the database models, relations, and constraints used in QuickPoll with PostgreSQL on Neon.
+This document describes the database tables and constraints used in QuickPoll.
 
 ```mermaid
 erDiagram

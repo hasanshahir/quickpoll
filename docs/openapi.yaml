@@ -1,10 +1,7 @@
 openapi: 3.0.3
 info:
   title: QuickPoll API
-  description: >
-    Production REST & Server-Sent Events (SSE) API for QuickPoll, an instant real-time
-    polling platform with atomic ballot submission, anti-duplicate voting constraints,
-    and live result broadcasts.
+  description: REST and Server-Sent Events API for QuickPoll.
   version: 1.0.0
 servers:
   - url: /
