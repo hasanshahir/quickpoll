@@ -1,10 +1,66 @@
-.neon
+# Environment & Secrets
 .env
+.env*
+*.env
 .env.local
-.env.*
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+credentials.json
+client_secret*.json
+
+# Dependencies
 node_modules/
+*/node_modules/
+
+# Production & Build outputs
 dist/
 client/dist/
-.DS_Store
+server/dist/
+build/
+*.tsbuildinfo
+
+# Tooling, Cloud & Agent configs
+.neon
+.neon/
+.vercel
+.netlify
+.serverless
 .agents/
 skills-lock.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
