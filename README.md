@@ -1,8 +1,8 @@
 # QuickPoll — Instant Real-Time Polling Platform
 
-> **Live Deployment**: `[REPLACE_WITH_RENDER_LIVE_URL]`
+> **Live Deployment**: [https://quickpoll-pt1z.onrender.com](https://quickpoll-pt1z.onrender.com)
 > 
-> **Interactive API Docs**: `[REPLACE_WITH_RENDER_LIVE_URL]/api/docs` (or `http://localhost:5000/api/docs` locally)
+> **Interactive API Docs**: [https://quickpoll-pt1z.onrender.com/api/docs](https://quickpoll-pt1z.onrender.com/api/docs) (or `http://localhost:5000/api/docs` locally)
 > 
 > **Demo Video Walkthrough**: `[REPLACE_WITH_DEMO_VIDEO_LINK]`
 
@@ -66,9 +66,10 @@
 
 ## 🔗 Verified Demo Poll
 A pre-seeded demonstration poll is available in the database:
-- **Ballot Vote Page**: `/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8`
-- **Live Results Page**: `/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results`
-- **Creator Admin Page**: `/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d`
+- **Ballot Vote Page**: [https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8](https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8)
+- **Live Results Page**: [https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results](https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results)
+- **Creator Admin Page**: [https://quickpoll-pt1z.onrender.com/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d](https://quickpoll-pt1z.onrender.com/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d)
+- **Community Trending Feed**: [https://quickpoll-pt1z.onrender.com/trending](https://quickpoll-pt1z.onrender.com/trending)
 
 ---
 
