@@ -1,17 +1,23 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { pool } from './db.js';
 import { pollsRouter } from './routes/polls.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// API Routes
 app.use('/api/polls', pollsRouter);
 
 app.get('/api/health', async (_req: Request, res: Response) => {
@@ -27,3 +33,23 @@ app.get('/api/health', async (_req: Request, res: Response) => {
     res.status(500).json({ status: 'error', message: 'Database connection failed' });
   }
 });
+
+// Serve client/dist static assets for unified single-service deployment
+const distCandidates = [
+  path.resolve(__dirname, '../../client/dist'),
+  path.resolve(__dirname, '../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+];
+const clientDistPath = distCandidates.find((candidate) => fs.existsSync(candidate));
+
+if (clientDistPath) {
+  app.use(express.static(clientDistPath));
+
+  // SPA fallback for all non-/api routes
+  app.get('*', (req: Request, res: Response, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
