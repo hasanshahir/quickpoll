@@ -21,7 +21,7 @@ export const app = express();
 
 app.set('trust proxy', 1);
 
-// Security Headers via Helmet (with relaxed CSP on /api/docs so Swagger UI works flawlessly)
+// Helmet headers (relaxed CSP for Swagger UI)
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -37,11 +37,9 @@ app.use(
 );
 
 app.use(cookieParser());
-
-// Enforce 10kb JSON request payload limit
 app.use(express.json({ limit: '10kb' }));
 
-// Set UUID httpOnly cookie "qp_voter" for privacy-preserving voter deduplication
+// Assign voter UUID cookie if missing
 app.use((req: Request, res: Response, next: NextFunction) => {
   let voterToken = req.cookies?.qp_voter;
   if (!voterToken || typeof voterToken !== 'string') {
@@ -92,7 +90,7 @@ app.get('/api/health', async (_req: Request, res: Response) => {
   }
 });
 
-// Serve client/dist static assets for unified single-service deployment
+// Serve client build
 const distCandidates = [
   path.resolve(__dirname, '../../client/dist'),
   path.resolve(__dirname, '../client/dist'),
@@ -103,7 +101,6 @@ const clientDistPath = distCandidates.find((candidate) => fs.existsSync(candidat
 if (clientDistPath) {
   app.use(express.static(clientDistPath));
 
-  // SPA fallback for all non-/api routes
   app.get('*', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api')) {
       return next();
@@ -112,7 +109,7 @@ if (clientDistPath) {
   });
 }
 
-// Production-ready global error handler: generic error messages, no stack traces leaked
+// Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || 500;
   const isProd = process.env.NODE_ENV === 'production';

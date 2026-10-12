@@ -23,12 +23,8 @@ const voteLimiter = rateLimit({
   message: { error: 'Too many votes cast from this IP, please slow down.' },
 });
 
-/**
- * Parameterized helper to fetch and aggregate current poll results.
- * Returns null if the poll ID is not found.
- */
 export async function fetchPollResultsData(pollId: string) {
-  // Parameterized query retrieving poll metadata and closed/expiration status
+  // Query poll metadata and status
   const pollResult = await pool.query(
     `SELECT id, question, is_multiple_choice, is_closed, expires_at, created_at 
      FROM polls 
@@ -43,7 +39,7 @@ export async function fetchPollResultsData(pollId: string) {
   const poll = pollResult.rows[0];
   const isExpired = poll.expires_at && new Date() > new Date(poll.expires_at);
 
-  // Parameterized aggregation query tallying votes per option
+  // Query vote counts per option
   const results = await pool.query(
     `SELECT 
        o.id AS option_id,
@@ -73,7 +69,6 @@ export async function fetchPollResultsData(pollId: string) {
   };
 }
 
-// 1. Create a Poll (Transaction: insert poll + insert options)
 pollsRouter.post('/', createPollLimiter, async (req: Request, res: Response): Promise<void> => {
   const { question, options, is_multiple_choice, expires_at } = req.body;
 
@@ -91,7 +86,7 @@ pollsRouter.post('/', createPollLimiter, async (req: Request, res: Response): Pr
   try {
     await client.query('BEGIN');
 
-    // Parameterized query inserting new poll record with optional expiry
+    // Insert poll record
     const pollResult = await client.query(
       `INSERT INTO polls (question, is_multiple_choice, expires_at)
        VALUES ($1, $2, $3)
@@ -106,7 +101,7 @@ pollsRouter.post('/', createPollLimiter, async (req: Request, res: Response): Pr
       if (typeof optText !== 'string' || optText.trim().length === 0) {
         throw new Error('Option text cannot be empty.');
       }
-      // Parameterized query inserting each option for the poll
+      // Insert poll option
       const optionResult = await client.query(
         `INSERT INTO options (poll_id, option_text)
          VALUES ($1, $2)
@@ -137,12 +132,11 @@ pollsRouter.post('/', createPollLimiter, async (req: Request, res: Response): Pr
   }
 });
 
-// 2. Fetch Poll Details for Voting (excludes admin_token)
 pollsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
-    // Parameterized query fetching poll details without leaking admin token
+    // Query poll details excluding admin_token
     const pollResult = await pool.query(
       `SELECT id, question, is_multiple_choice, is_closed, expires_at, created_at
        FROM polls WHERE id = $1`,
@@ -157,13 +151,13 @@ pollsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
     const poll = pollResult.rows[0];
     const isExpired = poll.expires_at && new Date() > new Date(poll.expires_at);
 
-    // Parameterized query retrieving options for the poll
+    // Query options for poll
     const optionsResult = await pool.query(
       `SELECT id, option_text FROM options WHERE poll_id = $1 ORDER BY created_at ASC`,
       [id]
     );
 
-    // Parameterized query checking if current voter has already cast a ballot
+    // Check if voter already cast ballot
     const voterToken = (req as any).voterToken || req.cookies?.qp_voter;
     let hasVoted = false;
     if (voterToken) {
@@ -186,7 +180,6 @@ pollsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// 3. Submit Vote (Atomic transaction enforcing duplicate prevention via 23505)
 pollsRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const { option_ids } = req.body;
@@ -206,7 +199,7 @@ pollsRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response): 
   try {
     await client.query('BEGIN');
 
-    // Parameterized check of poll status and rules
+    // Check poll status
     const pollResult = await client.query(
       `SELECT is_closed, is_multiple_choice, expires_at FROM polls WHERE id = $1`,
       [id]
@@ -231,13 +224,13 @@ pollsRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response): 
       return;
     }
 
-    // 1. Insert voter record (Triggers unique constraint 23505 if already voted)
+    // Insert voter record (triggers unique constraint 23505 if already voted)
     await client.query(
       `INSERT INTO poll_voters (poll_id, voter_token) VALUES ($1, $2)`,
       [id, voter_token]
     );
 
-    // 2. Insert vote rows
+    // Insert vote rows
     for (const optionId of option_ids) {
       await client.query(
         `INSERT INTO votes (poll_id, option_id) VALUES ($1, $2)`,
@@ -247,7 +240,7 @@ pollsRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response): 
 
     await client.query('COMMIT');
 
-    // Broadcast fresh results to all active SSE subscribers after committed vote
+    // Broadcast fresh results to active SSE subscribers
     fetchPollResultsData(id).then((freshResults) => {
       if (freshResults) {
         sseHub.broadcast(id, freshResults);
@@ -269,7 +262,6 @@ pollsRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response): 
   }
 });
 
-// 4. Poll Results Aggregation (SQL GROUP BY + Percentages)
 pollsRouter.get('/:id/results', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
@@ -286,11 +278,10 @@ pollsRouter.get('/:id/results', async (req: Request, res: Response): Promise<voi
   }
 });
 
-// 4b. Live SSE Stream for Poll Results (text/event-stream)
 pollsRouter.get('/:id/stream', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
-  // Set mandatory SSE headers: disable cache and proxy buffering
+  // Set SSE headers to disable proxy buffering and caching
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
@@ -310,7 +301,7 @@ pollsRouter.get('/:id/stream', async (req: Request, res: Response): Promise<void
     // Send current results immediately on connect
     res.write(`data: ${JSON.stringify(initialData)}\n\n`);
 
-    // Subscribe connection to real-time events with 25s heartbeat comment
+    // Subscribe connection with 25s heartbeat comment
     const cleanup = sseHub.subscribe(id, res);
 
     req.on('close', () => {
@@ -322,10 +313,9 @@ pollsRouter.get('/:id/stream', async (req: Request, res: Response): Promise<void
   }
 });
 
-// 5. Trending Polls (Sorted by engagement)
 pollsRouter.get('/feed/trending', async (_req: Request, res: Response): Promise<void> => {
   try {
-    // Parameterized query retrieving top active polls by vote count
+    // Top active polls ordered by vote count
     const trending = await pool.query(
       `SELECT 
          p.id,
@@ -346,13 +336,12 @@ pollsRouter.get('/feed/trending', async (_req: Request, res: Response): Promise<
   }
 });
 
-// 6. Creator Admin: Close Poll Early
 pollsRouter.patch('/:id/close', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const adminToken = req.headers['x-admin-token'] || req.body.admin_token;
 
   try {
-    // Parameterized update securing poll closure with admin token verification
+    // Update poll to closed with admin token check
     const result = await pool.query(
       `UPDATE polls 
        SET is_closed = TRUE 
@@ -366,7 +355,7 @@ pollsRouter.patch('/:id/close', async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Broadcast updated results reflecting closed status to all subscribers
+    // Broadcast updated results to subscribers
     fetchPollResultsData(id).then((freshResults) => {
       if (freshResults) {
         sseHub.broadcast(id, freshResults);
@@ -381,13 +370,12 @@ pollsRouter.patch('/:id/close', async (req: Request, res: Response): Promise<voi
   }
 });
 
-// 7. Creator Admin: Delete Poll
 pollsRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const adminToken = req.headers['x-admin-token'] || req.body.admin_token;
 
   try {
-    // Parameterized delete securing poll removal with admin token verification
+    // Delete poll with admin token check
     const result = await pool.query(
       `DELETE FROM polls WHERE id = $1 AND admin_token = $2 RETURNING id`,
       [id, adminToken]
