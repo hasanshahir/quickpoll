@@ -1,151 +1,157 @@
-# QuickPoll — Instant Real-Time Polling Platform
+# QuickPoll
 
-> **Live Deployment**: [https://quickpoll-pt1z.onrender.com](https://quickpoll-pt1z.onrender.com)
-> 
-> **Interactive API Docs**: [https://quickpoll-pt1z.onrender.com/api/docs](https://quickpoll-pt1z.onrender.com/api/docs) (or `http://localhost:5000/api/docs` locally)
-> 
-> **Demo Video Walkthrough**: `[REPLACE_WITH_DEMO_VIDEO_LINK]`
+QuickPoll is a web application for creating and voting on polls in real time without creating an account or logging in.
 
----
+- Live URL: https://quickpoll-pt1z.onrender.com
+- API Docs: https://quickpoll-pt1z.onrender.com/api/docs
+- Demo Video: [REPLACE_WITH_DEMO_VIDEO_LINK]
 
-## ⚡ Overview
-**QuickPoll** is a lightweight, zero-login, real-time polling platform built for high-throughput ballot collection and instant result synchronization. Anyone can formulate a question with 2 to 10 options, share it via URL or vector QR code, and watch the results broadcast in real time across all connected browsers using Server-Sent Events (SSE).
+## Demo Poll
 
-**There is no user registration or login.** Creators receive a unique, secret administrative token that grants permissions to close or permanently delete their polls.
+The database has a pre-seeded demonstration poll:
+- Voter page: https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8
+- Results page: https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results
+- Admin page: https://quickpoll-pt1z.onrender.com/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d
 
----
+Note: The app has no user accounts or login. When a poll is created, the server generates a secret admin token. The creator uses this token to close voting or delete the poll.
 
-## ✨ Key Features
-- **Zero-Friction Poll Creation**: Create dynamic single or multiple-choice polls in seconds with optional expiration time.
-- **Real-Time Live Results (SSE)**: `GET /api/polls/:id/stream` provides immediate updates after every ballot submission, poll closure, or deletion with an automated 25-second heartbeat.
-- **Resilient Connection Fallback**: The client automatically reconnects to SSE and gracefully falls back to **5-second polling** if the stream experiences repeated network failures.
-- **Double-Vote Interception**: Deduplication enforced at the PostgreSQL database level using a compound primary key `(poll_id, voter_token)`.
-- **Integrated QR Code & Link Sharing**: Mobile-friendly vector QR codes (`qrcode.react`) and 1-click clipboard copy for both ballot and result URLs.
-- **Creator Moderation Tools**: Close polls early or delete them completely using a secret `x-admin-token`.
-- **Trending Polls Feed**: Live community discovery feed ranking active polls by total vote engagement.
-- **Mobile-First Responsive Design**: Optimized down to 360px viewport widths with tailored dark mode styling.
+## Features
 
----
+- Create polls with 2 to 10 options, optional multiple choice, and optional expiration date.
+- Vote with single or multiple selections depending on poll settings.
+- Real-time live results streamed via Server-Sent Events (SSE).
+- Automatic reconnection with a 5-second polling fallback if the live stream disconnects.
+- Shareable links and QR codes for voting and results pages.
+- Trending page showing polls ordered by total vote count.
+- Admin management to close voting early or delete a poll.
+- Duplicate vote prevention using database constraints and cookies.
 
-## 🛠️ Technology Stack
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide React, QRCode React, React Router 7.
-- **Backend**: Node.js, Express, TypeScript, Server-Sent Events (SSE), Helmet, Cookie Parser, Express Rate Limit, `pg` connection pool.
-- **Database**: PostgreSQL on Neon (Serverless Postgres with pooled connections & SSL).
-- **API Documentation**: OpenAPI 3.0.3 with Swagger UI at `/api/docs`.
-- **Testing**: Vitest & Supertest (covering creation, duplicate rejection, 20-parallel race conditions, closure, distinct cookies).
+## Tech Stack
 
----
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS, React Router, Lucide React, qrcode.react
+- Backend: Node.js, Express, TypeScript, Server-Sent Events, pg (node-postgres), cookie-parser, helmet, express-rate-limit
+- Database: PostgreSQL (hosted on Neon)
+- Testing: Vitest, Supertest
+- API Documentation: OpenAPI 3.0 with Swagger UI
 
-## 📸 Screenshots
+## How It Works
 
-### Desktop Views (1280px)
-| Create Poll Page | Live Results & Chart |
-| :---: | :---: |
-| ![Desktop Create Poll](docs/screenshots/desktop_create.png) | ![Desktop Results](docs/screenshots/desktop_results.png) |
+- Request Flow: The React frontend sends HTTP requests to Express API routes. Express runs parameterized queries against PostgreSQL via a connection pool.
+- Votes and Unique Constraint: When a client visits the site, Express assigns an httpOnly cookie (`qp_voter`) containing a UUID. When voting, the server inserts a row into `poll_voters (poll_id, voter_token)`. Because `(poll_id, voter_token)` is a compound primary key, a second vote from the same cookie causes PostgreSQL to throw error `23505` (`unique_violation`). The backend catches this error and responds with HTTP 409 Conflict. This guarantees that race conditions (such as parallel vote requests) cannot record duplicate ballots.
+- Server-Sent Events: When a client views results, it opens a persistent GET connection to `/api/polls/:id/stream`. The server sends current results immediately and keeps the connection open with a heartbeat comment sent every 25 seconds to prevent proxy timeouts. Whenever a vote is committed, a poll is closed, or a poll is deleted, the backend recalculates results and broadcasts the updated data to all connected clients for that poll. If the connection fails, the frontend automatically falls back to polling the results endpoint every 5 seconds.
 
-| Voting Ballot | Trending Community Feed |
-| :---: | :---: |
-| ![Desktop Vote](docs/screenshots/desktop_vote.png) | ![Desktop Trending](docs/screenshots/desktop_trending.png) |
+## Environment Variables
 
-| Creator Admin Moderation |
-| :---: |
-| ![Desktop Admin](docs/screenshots/desktop_admin.png) |
+The server uses the following environment variables:
 
----
+- `DATABASE_URL`: PostgreSQL connection string with SSL enabled (`postgres://...sslmode=require`).
+- `PORT`: HTTP port for the Express server (default: `5000`).
+- `PG_POOL_MAX`: Maximum number of database pool connections (default: `10`, set to `25` for high concurrency).
+- `NODE_ENV`: Set to `production` when deployed.
 
-### Mobile Views (360px)
-| Mobile Create | Mobile Ballot | Mobile Results |
-| :---: | :---: | :---: |
-| ![Mobile Create](docs/screenshots/mobile_create.png) | ![Mobile Vote](docs/screenshots/mobile_vote.png) | ![Mobile Results](docs/screenshots/mobile_results.png) |
-
-| Mobile Trending | Mobile Admin |
-| :---: | :---: |
-| ![Mobile Trending](docs/screenshots/mobile_trending.png) | ![Mobile Admin](docs/screenshots/mobile_admin.png) |
-
----
-
-## 🔗 Verified Demo Poll
-A pre-seeded demonstration poll is available in the database:
-- **Ballot Vote Page**: [https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8](https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8)
-- **Live Results Page**: [https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results](https://quickpoll-pt1z.onrender.com/p/27e482c7-e098-4e5b-8bc9-92b1a79e1de8/results)
-- **Creator Admin Page**: [https://quickpoll-pt1z.onrender.com/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d](https://quickpoll-pt1z.onrender.com/manage/27e482c7-e098-4e5b-8bc9-92b1a79e1de8?token=f6c5823c-5dab-4359-9659-6eaa94caa03d)
-- **Community Trending Feed**: [https://quickpoll-pt1z.onrender.com/trending](https://quickpoll-pt1z.onrender.com/trending)
-
----
-
-## 🔒 Security & Voter Identity Architecture
-
-### 1. Zero Login / Frictionless Creator Administration
-To maintain maximum accessibility, QuickPoll does not require users to create accounts.
-- When a poll is created, the server generates a cryptographically random UUID `admin_token`.
-- This token is returned once in the creation response and is **never** exposed in public poll endpoints.
-- Privileged operations (`PATCH /api/polls/:id/close` and `DELETE /api/polls/:id`) require authentication via the `x-admin-token` header or request body.
-- When opened via an administrative link (`?token=...`), the client stores the token in `localStorage` and scrubs the query parameter from the address bar using `history.replaceState` to prevent token leakage via copy-pasting or shoulder surfing.
-
-### 2. Cookie-Based Voter Identity
-- Each voter is identified by a server-set `httpOnly` cookie (`qp_voter`) with `SameSite=Lax`, `Secure` (in production), and a 1-year lifespan.
-- When a voter views a poll, `GET /api/polls/:id` checks the voter's cookie against the database and returns `hasVoted: true`, allowing the client to present their recorded ballot status and navigate directly to live results.
-- **Honest Security Limitations**:
-  - Because identity is cookie-based, clearing browser cookies, using private/incognito browsing windows, or opening the poll in a different browser allows a user to vote again.
-  - IP addresses are **not** used to restrict ballots to a single vote because shared networks (university campuses, corporate offices, coffee shops) share a single public IP, which would unfairly block legitimate co-located voters.
-  - Instead, IP addresses are safeguarded via **sliding-window rate limiting** (20 poll creations/hour/IP and 30 votes/minute/IP) to defend against automated ballot stuffing scripts and DoS attacks.
-  - The core guarantee against race conditions remains the atomic PostgreSQL primary key constraint `PRIMARY KEY (poll_id, voter_token)`.
-
-### 3. Application Hardening
-- **Helmet**: Secures HTTP headers while maintaining unbuffered SSE streaming and Swagger UI availability.
-- **Payload Limits**: Strict 10kb JSON body limits on incoming requests.
-- **Production Information Masking**: Generic error responses in production environments (`NODE_ENV=production`) ensuring internal stack traces and server internals are never exposed.
-
----
-
-## 🚀 Local Development Setup
-
-### 1. Prerequisites
-- Node.js 20+
-- PostgreSQL database (or free [Neon](https://neon.tech) account)
-
-### 2. Environment Variables
-Create `.env` in `server/` (or `.env.local` in project root):
+Example `.env` file for `server/`:
 ```env
-DATABASE_URL=postgres://user:password@ep-example.pooler.region.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgres://user:password@ep-example.neon.tech/neondb?sslmode=require
 PG_POOL_MAX=25
 PORT=5000
 NODE_ENV=development
 ```
 
-### 3. Installation & Run
-```bash
-# Build both client and server bundles
-npm run build
+## Local Setup
 
-# Run database schema migrations
-npm --prefix server run migrate
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/hasanshahir/quickpoll.git
+   cd quickpoll
+   ```
 
-# Run idempotent seed script (prints demo links)
-npm --prefix server run seed
+2. Install dependencies:
+   ```bash
+   npm --prefix client install
+   npm --prefix server install
+   ```
 
-# Run automated Vitest + Supertest suite
-npm --prefix server test
+3. Set up the database:
+   Create a `.env` file in `server/` with your `DATABASE_URL`. Run the migration script to create tables:
+   ```bash
+   npm --prefix server run migrate
+   ```
 
-# Start unified production server
-npm start
-```
+   (Optional) Seed the demo poll:
+   ```bash
+   npm --prefix server run seed
+   ```
 
----
+4. Run tests:
+   ```bash
+   npm --prefix server test
+   ```
 
-## ☁️ Deployment Guide (Render Single Web Service)
+5. Run in development:
+   In one terminal, start the backend:
+   ```bash
+   npm --prefix server run dev
+   ```
+   In another terminal, start the frontend:
+   ```bash
+   npm --prefix client run dev
+   ```
 
-QuickPoll is designed to run as a single unified web service where Express delivers both the API endpoints and the compiled React frontend.
+6. Build and run production locally:
+   ```bash
+   npm run build
+   npm start
+   ```
 
-1. **Create Web Service on Render**:
-   - Connect repository `hasanshahir/quickpoll`.
-   - **Environment**: Node
-   - **Build Command**: `npm run build`
-   - **Start Command**: `npm run start` (runs migration then boots the server)
-2. **Environment Variables on Render**:
-   - `DATABASE_URL`: `postgres://[user]:[password]@[neon-host]/neondb?sslmode=require` (Pooled connection string)
-   - `NODE_ENV`: `production`
-   - `PG_POOL_MAX`: `25`
-3. **Verify Deployment**:
-   - Navigate to `https://your-service.onrender.com`
-   - Test `/api/health` and `/api/docs`
+## Deployment
+
+The application is deployed on Render as a single web service where Express serves the API routes and the built React frontend (`client/dist`).
+
+- Service Type: Web Service (Node)
+- Build Command: `npm run build`
+- Start Command: `npm run start` (runs `migrate` then starts `node dist/index.js`)
+- Environment Variables on Render:
+  - `DATABASE_URL`: Neon PostgreSQL pooled connection string
+  - `NODE_ENV`: `production`
+  - `PG_POOL_MAX`: `25`
+
+## Known Limitations
+
+- Voter Identity is Cookie-Based: Because QuickPoll requires no login, voter identity relies on a server-set httpOnly cookie. If a user clears their browser cookies, opens a private or incognito window, or switches browsers, they will receive a new cookie and can vote again. IP-based blocking was avoided because users on shared networks (such as universities, schools, or offices) share a public IP and would be blocked from voting. Rate limiting (30 votes per minute per IP) is used instead to prevent scripted ballot stuffing.
+- Free Tier Sleep: The free Render instance spins down after 15 minutes of inactivity. When asleep, the first incoming request can take approximately 50 seconds while the server spins back up.
+
+## Screenshots
+
+### Desktop Views
+
+- Create Poll:
+  ![Create Poll](docs/screenshots/desktop_create.png)
+
+- Voting Ballot:
+  ![Voting Ballot](docs/screenshots/desktop_vote.png)
+
+- Live Results:
+  ![Live Results](docs/screenshots/desktop_results.png)
+
+- Trending Feed:
+  ![Trending Feed](docs/screenshots/desktop_trending.png)
+
+- Admin Moderation:
+  ![Admin Moderation](docs/screenshots/desktop_admin.png)
+
+### Mobile Views
+
+- Mobile Create:
+  ![Mobile Create](docs/screenshots/mobile_create.png)
+
+- Mobile Vote:
+  ![Mobile Vote](docs/screenshots/mobile_vote.png)
+
+- Mobile Results:
+  ![Mobile Results](docs/screenshots/mobile_results.png)
+
+- Mobile Trending:
+  ![Mobile Trending](docs/screenshots/mobile_trending.png)
+
+- Mobile Admin:
+  ![Mobile Admin](docs/screenshots/mobile_admin.png)
