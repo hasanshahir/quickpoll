@@ -72,6 +72,27 @@ paths:
           description: Poll details retrieved.
         '404':
           description: Poll not found.
+    delete:
+      summary: Permanently delete poll (Admin)
+      description: Requires creator admin token. Cascades deletion of all options, votes, and voter records.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: x-admin-token
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Poll deleted successfully.
+        '403':
+          description: Invalid admin token.
 
   /api/polls/{id}/vote:
     post:
@@ -186,28 +207,5 @@ paths:
       responses:
         '200':
           description: Poll closed successfully.
-        '403':
-          description: Invalid admin token.
-
-  /api/polls/{id}:
-    delete:
-      summary: Permanently delete poll (Admin)
-      description: Requires creator admin token. Cascades deletion of all options, votes, and voter records.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: x-admin-token
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Poll deleted successfully.
         '403':
           description: Invalid admin token.
