@@ -9,7 +9,7 @@
     "start": "npm --prefix server run migrate && npm --prefix server run start"
   },
   "dependencies": {
-    "@neon/config": "^1.8.6",
+    "@neon/config": "^1.9.2",
     "@neon/env": "^1.5.3"
   }
 }
